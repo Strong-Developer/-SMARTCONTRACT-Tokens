@@ -1,27 +1,8 @@
 /**
- *Submitted for verification at BscScan.com on 2021-03-01
+ *Submitted for verification at BscScan.com on 2021-04-08
 */
 
-/**
- *Submitted for verification at BscScan.com on 2021-03-01
-*/
-
-/**
-  
-   #BEE
-   
-   #LIQ+#RFI+#SHIB+#DOGE = #BEE
-
-   #SAFEMOON features:
-   3% fee auto add to the liquidity pool to locked forever when selling
-   2% fee auto distribute to all holders
-   I created a black hole so #Bee token will deflate itself in supply with every transaction
-   50% Supply is burned at start.
-   
-
- */
-
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 // SPDX-License-Identifier: Unlicensed
 interface IERC20 {
 
@@ -252,7 +233,7 @@ library SafeMath {
 }
 
 abstract contract Context {
-    function _msgSender() internal view virtual returns (address payable) {
+    function _msgSender() internal view virtual returns (address) {
         return msg.sender;
     }
 
@@ -414,20 +395,13 @@ library Address {
  * the owner.
  */
 contract Ownable is Context {
-    address private _owner;
+    address public _owner;
     address private _previousOwner;
     uint256 private _lockTime;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor () internal {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
-    }
+
 
     /**
      * @dev Returns the address of the current owner.
@@ -474,14 +448,14 @@ contract Ownable is Context {
     function lock(uint256 time) public virtual onlyOwner {
         _previousOwner = _owner;
         _owner = address(0);
-        _lockTime = now + time;
+        _lockTime = block.timestamp + time;
         emit OwnershipTransferred(_owner, address(0));
     }
     
     //Unlocks the contract for owner when _lockTime is exceeds
     function unlock() public virtual {
         require(_previousOwner == msg.sender, "You don't have permission to unlock");
-        require(now > _lockTime , "Contract is locked until 7 days");
+        require(block.timestamp > _lockTime , "Contract is locked until 7 days");
         emit OwnershipTransferred(_owner, _previousOwner);
         _owner = _previousOwner;
     }
@@ -701,7 +675,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
 }
 
 
-contract SafeMoon is Context, IERC20, Ownable {
+contract CREAMPYE is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
@@ -715,30 +689,30 @@ contract SafeMoon is Context, IERC20, Ownable {
     address[] private _excluded;
    
     uint256 private constant MAX = ~uint256(0);
-    uint256 private _tTotal = 1000000000 * 10**6 * 10**9;
+    uint256 private _tTotal = 1000000000 * 10**6 * 10**18;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
-
-    string private _name = "SafeMoon";
-    string private _symbol = "SAFEMOON";
-    uint8 private _decimals = 9;
+     
+    string private _name = "CREAMPYE";
+    string private _symbol = "PYE";
+    uint8 private _decimals = 18;
     
-    uint256 public _taxFee = 5;
+    uint256 public _taxFee = 49;
     uint256 private _previousTaxFee = _taxFee;
-    
-    uint256 public _liquidityFee = 5;
-    uint256 private _previousLiquidityFee = _liquidityFee;
 
+    uint256 public _Charity = 1;
+    uint256 private _previousCharityFee = _Charity;
+    
+    uint256 public _liquidityFee = 50;
+    uint256 private _previousLiquidityFee = _liquidityFee;
+    address public charityAdd = 0xE243141F4dA244784174E1AD92642CC415C69071;
+   
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
-    
+    uint256 private numTokensSellToAddToLiquidity = 500000000000 * 10**18;
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
-    
-    uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
-    uint256 private numTokensSellToAddToLiquidity = 500000 * 10**6 * 10**9;
-    
-    event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
+    event Purchase(address indexed to, uint256 amount);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
     event SwapAndLiquify(
         uint256 tokensSwapped,
@@ -752,9 +726,10 @@ contract SafeMoon is Context, IERC20, Ownable {
         inSwapAndLiquify = false;
     }
     
-    constructor () public {
-        _rOwned[_msgSender()] = _rTotal;
-        
+    constructor () {
+        _owner = _msgSender();
+        _rOwned[_owner] = _rTotal;
+         
         IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
          // Create a uniswap pair for this new token
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
@@ -764,10 +739,10 @@ contract SafeMoon is Context, IERC20, Ownable {
         uniswapV2Router = _uniswapV2Router;
         
         //exclude owner and this contract from fee
-        _isExcludedFromFee[owner()] = true;
+        _isExcludedFromFee[_owner] = true;
         _isExcludedFromFee[address(this)] = true;
         
-        emit Transfer(address(0), _msgSender(), _tTotal);
+        emit Transfer(address(0),_owner , _tTotal);
     }
 
     function name() public view returns (string memory) {
@@ -829,22 +804,14 @@ contract SafeMoon is Context, IERC20, Ownable {
         return _tFeeTotal;
     }
 
-    function deliver(uint256 tAmount) public {
-        address sender = _msgSender();
-        require(!_isExcluded[sender], "Excluded addresses cannot call this function");
-        (uint256 rAmount,,,,,) = _getValues(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rTotal = _rTotal.sub(rAmount);
-        _tFeeTotal = _tFeeTotal.add(tAmount);
-    }
 
     function reflectionFromToken(uint256 tAmount, bool deductTransferFee) public view returns(uint256) {
         require(tAmount <= _tTotal, "Amount must be less than supply");
         if (!deductTransferFee) {
-            (uint256 rAmount,,,,,) = _getValues(tAmount);
+            (uint256 rAmount,,,,,,) = _getValues(tAmount);
             return rAmount;
         } else {
-            (,uint256 rTransferAmount,,,,) = _getValues(tAmount);
+            (,uint256 rTransferAmount,,,,,) = _getValues(tAmount);
             return rTransferAmount;
         }
     }
@@ -877,16 +844,6 @@ contract SafeMoon is Context, IERC20, Ownable {
             }
         }
     }
-        function _transferBothExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
-        _tOwned[sender] = _tOwned[sender].sub(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);        
-        _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
     
         function excludeFromFee(address account) public onlyOwner {
         _isExcludedFromFee[account] = true;
@@ -900,47 +857,52 @@ contract SafeMoon is Context, IERC20, Ownable {
         _taxFee = taxFee;
     }
     
-    function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
-        _liquidityFee = liquidityFee;
+    function setCharityAdd(address addr) external onlyOwner() {
+        charityAdd = addr;
+    }
+    
+    function setCharityFeePercent(uint256 Charity) external onlyOwner() {
+        _Charity = Charity;
     }
    
-    function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
-        _maxTxAmount = _tTotal.mul(maxTxPercent).div(
-            10**2
-        );
+    function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
+        _liquidityFee = liquidityFee;
     }
 
     function setSwapAndLiquifyEnabled(bool _enabled) public onlyOwner {
         swapAndLiquifyEnabled = _enabled;
         emit SwapAndLiquifyEnabledUpdated(_enabled);
     }
-    
-     //to recieve ETH from uniswapV2Router when swaping
-    receive() external payable {}
+ 
+    //to recieve ETH from uniswapV2Router when swaping
 
+    receive() external payable {
+    }
+       
     function _reflectFee(uint256 rFee, uint256 tFee) private {
         _rTotal = _rTotal.sub(rFee);
         _tFeeTotal = _tFeeTotal.add(tFee);
     }
 
-    function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
-        (uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getTValues(tAmount);
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, tLiquidity, _getRate());
-        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tLiquidity);
+    function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
+        (uint256 tTransferAmount, uint256 tFee, uint256 tburn, uint256 tLiquidity) = _getTValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, tburn, _getRate());
+        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tburn, tLiquidity);
     }
 
-    function _getTValues(uint256 tAmount) private view returns (uint256, uint256, uint256) {
+    function _getTValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256) {
         uint256 tFee = calculateTaxFee(tAmount);
+        uint256 charity = calculateCharityFee(tAmount);
         uint256 tLiquidity = calculateLiquidityFee(tAmount);
-        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity);
-        return (tTransferAmount, tFee, tLiquidity);
+        uint256 tTransferAmount = tAmount.sub(tFee).sub(charity).sub(tLiquidity);
+        return (tTransferAmount, tFee, charity, tLiquidity);
     }
 
-    function _getRValues(uint256 tAmount, uint256 tFee, uint256 tLiquidity, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
+    function _getRValues(uint256 tAmount, uint256 tFee, uint256 charity, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
         uint256 rAmount = tAmount.mul(currentRate);
         uint256 rFee = tFee.mul(currentRate);
-        uint256 rLiquidity = tLiquidity.mul(currentRate);
-        uint256 rTransferAmount = rAmount.sub(rFee).sub(rLiquidity);
+        uint256 rCharity = charity.mul(currentRate);
+        uint256 rTransferAmount = rAmount.sub(rFee).sub(rCharity);
         return (rAmount, rTransferAmount, rFee);
     }
 
@@ -969,30 +931,48 @@ contract SafeMoon is Context, IERC20, Ownable {
             _tOwned[address(this)] = _tOwned[address(this)].add(tLiquidity);
     }
     
+    function _charity(uint256 charity) private {
+        uint256 currentRate =  _getRate();
+        uint256 rCharity = charity.mul(currentRate);
+        _rOwned[charityAdd] = _rOwned[charityAdd].add(rCharity);
+    
+    
+    }
+    
     function calculateTaxFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_taxFee).div(
-            10**2
+            10**3
         );
     }
 
-    function calculateLiquidityFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_liquidityFee).div(
-            10**2
+    function calculateCharityFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_Charity).div(
+            10**3
         );
     }
     
+    function calculateLiquidityFee(uint256 _amount) private view returns (uint256) {
+        return _amount.mul(_liquidityFee).div(
+            10**3
+        );
+    }
+    
+    
     function removeAllFee() private {
-        if(_taxFee == 0 && _liquidityFee == 0) return;
+        if(_taxFee == 0 && _Charity == 0 && _liquidityFee == 0) return;
         
         _previousTaxFee = _taxFee;
+        _previousCharityFee = _Charity;
         _previousLiquidityFee = _liquidityFee;
         
         _taxFee = 0;
+        _Charity = 0;
         _liquidityFee = 0;
     }
     
     function restoreAllFee() private {
         _taxFee = _previousTaxFee;
+        _Charity = _previousCharityFee;
         _liquidityFee = _previousLiquidityFee;
     }
     
@@ -1016,20 +996,14 @@ contract SafeMoon is Context, IERC20, Ownable {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
-        if(from != owner() && to != owner())
-            require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
-
+  
         // is the token balance of this contract address over the min number of
         // tokens that we need to initiate a swap + liquidity lock?
         // also, don't get caught in a circular liquidity event.
         // also, don't swap & liquify if sender is uniswap pair.
         uint256 contractTokenBalance = balanceOf(address(this));
         
-        if(contractTokenBalance >= _maxTxAmount)
-        {
-            contractTokenBalance = _maxTxAmount;
-        }
-        
+    
         bool overMinTokenBalance = contractTokenBalance >= numTokensSellToAddToLiquidity;
         if (
             overMinTokenBalance &&
@@ -1115,52 +1089,30 @@ contract SafeMoon is Context, IERC20, Ownable {
         if(!takeFee)
             removeAllFee();
         
-        if (_isExcluded[sender] && !_isExcluded[recipient]) {
-            _transferFromExcluded(sender, recipient, amount);
-        } else if (!_isExcluded[sender] && _isExcluded[recipient]) {
-            _transferToExcluded(sender, recipient, amount);
-        } else if (!_isExcluded[sender] && !_isExcluded[recipient]) {
+
             _transferStandard(sender, recipient, amount);
-        } else if (_isExcluded[sender] && _isExcluded[recipient]) {
-            _transferBothExcluded(sender, recipient, amount);
-        } else {
-            _transferStandard(sender, recipient, amount);
-        }
+    
         
         if(!takeFee)
             restoreAllFee();
     }
 
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 charity, uint256 tLiquidity) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
+        _charity(charity);
         _reflectFee(rFee, tFee);
+         if(!_isExcludedFromFee[sender])
+        emit Transfer(sender, charityAdd, charity);
+        
         emit Transfer(sender, recipient, tTransferAmount);
     }
-
-    function _transferToExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);           
-        _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
-
-    function _transferFromExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
-        _tOwned[sender] = _tOwned[sender].sub(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);   
-        _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
-        emit Transfer(sender, recipient, tTransferAmount);
-    }
-
 
     
+
+
+
 
 }
