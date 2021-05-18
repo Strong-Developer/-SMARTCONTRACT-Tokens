@@ -1,0 +1,2070 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+div {
+	margin:5px;
+}
+</style>
+<script src="./web3.min.js"></script>
+<script>
+const testnet = `https://ropsten.infura.io/v3/3faf86d257c44a17aa5f284af7582176`;
+var web3 = new Web3(new Web3.providers.HttpProvider(testnet));
+
+var exchangerouterABI=[
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "_factory",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "_WETH",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [],
+				"name": "WETH",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenA",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenB",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountADesired",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountBDesired",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountAMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountBMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "addLiquidity",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountA",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountB",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountTokenDesired",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountTokenMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETHMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "addLiquidityETH",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountToken",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETH",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "factory",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reserveIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reserveOut",
+						"type": "uint256"
+					}
+				],
+				"name": "getAmountIn",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reserveIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reserveOut",
+						"type": "uint256"
+					}
+				],
+				"name": "getAmountOut",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					}
+				],
+				"name": "getAmountsIn",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					}
+				],
+				"name": "getAmountsOut",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountA",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reserveA",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reserveB",
+						"type": "uint256"
+					}
+				],
+				"name": "quote",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountB",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenA",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenB",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountAMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountBMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "removeLiquidity",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountA",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountB",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountTokenMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETHMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "removeLiquidityETH",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountToken",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETH",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountTokenMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETHMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "removeLiquidityETHSupportingFeeOnTransferTokens",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountETH",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountTokenMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETHMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "approveMax",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint8",
+						"name": "v",
+						"type": "uint8"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "r",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "s",
+						"type": "bytes32"
+					}
+				],
+				"name": "removeLiquidityETHWithPermit",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountToken",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETH",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountTokenMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountETHMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "approveMax",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint8",
+						"name": "v",
+						"type": "uint8"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "r",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "s",
+						"type": "bytes32"
+					}
+				],
+				"name": "removeLiquidityETHWithPermitSupportingFeeOnTransferTokens",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountETH",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "tokenA",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "tokenB",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "liquidity",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountAMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountBMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "approveMax",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint8",
+						"name": "v",
+						"type": "uint8"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "r",
+						"type": "bytes32"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "s",
+						"type": "bytes32"
+					}
+				],
+				"name": "removeLiquidityWithPermit",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountA",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountB",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapETHForExactTokens",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOutMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactETHForTokens",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOutMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactETHForTokensSupportingFeeOnTransferTokens",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountOutMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactTokensForETH",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountOutMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountOutMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactTokensForTokens",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountIn",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountOutMin",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountInMax",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapTokensForExactETH",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amountOut",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amountInMax",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address[]",
+						"name": "path",
+						"type": "address[]"
+					},
+					{
+						"internalType": "address",
+						"name": "to",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "deadline",
+						"type": "uint256"
+					}
+				],
+				"name": "swapTokensForExactTokens",
+				"outputs": [
+					{
+						"internalType": "uint256[]",
+						"name": "amounts",
+						"type": "uint256[]"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"stateMutability": "payable",
+				"type": "receive"
+			}
+		]
+
+var factoryABI=[
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "token0",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "token1",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "address",
+					"name": "pair",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"name": "PairCreated",
+			"type": "event"
+		},
+		{
+			"constant": true,
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"name": "allPairs",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "pair",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "allPairsLength",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "tokenA",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "tokenB",
+					"type": "address"
+				}
+			],
+			"name": "createPair",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "pair",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "feeTo",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "feeToSetter",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "tokenA",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "tokenB",
+					"type": "address"
+				}
+			],
+			"name": "getPair",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "pair",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"name": "setFeeTo",
+			"outputs": [],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"name": "setFeeToSetter",
+			"outputs": [],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		}
+	]
+
+var tokenABI=[
+		{
+			"inputs": [],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "constructor"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "owner",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "spender",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "value",
+					"type": "uint256"
+				}
+			],
+			"name": "Approval",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "previousOwner",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "newOwner",
+					"type": "address"
+				}
+			],
+			"name": "OwnershipTransferred",
+			"type": "event"
+		},
+		{
+			"anonymous": false,
+			"inputs": [
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "from",
+					"type": "address"
+				},
+				{
+					"indexed": true,
+					"internalType": "address",
+					"name": "to",
+					"type": "address"
+				},
+				{
+					"indexed": false,
+					"internalType": "uint256",
+					"name": "value",
+					"type": "uint256"
+				}
+			],
+			"name": "Transfer",
+			"type": "event"
+		},
+		{
+			"constant": true,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "owner",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "spender",
+					"type": "address"
+				}
+			],
+			"name": "allowance",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "spender",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				}
+			],
+			"name": "approve",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "account",
+					"type": "address"
+				}
+			],
+			"name": "balanceOf",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "decimals",
+			"outputs": [
+				{
+					"internalType": "uint8",
+					"name": "",
+					"type": "uint8"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "spender",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "subtractedValue",
+					"type": "uint256"
+				}
+			],
+			"name": "decreaseAllowance",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "getOwner",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "get_msgsender",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "spender",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "addedValue",
+					"type": "uint256"
+				}
+			],
+			"name": "increaseAllowance",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				}
+			],
+			"name": "mint",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "name",
+			"outputs": [
+				{
+					"internalType": "string",
+					"name": "",
+					"type": "string"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "owner",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "",
+					"type": "address"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [],
+			"name": "renounceOwnership",
+			"outputs": [],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "symbol",
+			"outputs": [
+				{
+					"internalType": "string",
+					"name": "",
+					"type": "string"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": true,
+			"inputs": [],
+			"name": "totalSupply",
+			"outputs": [
+				{
+					"internalType": "uint256",
+					"name": "",
+					"type": "uint256"
+				}
+			],
+			"payable": false,
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "recipient",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				}
+			],
+			"name": "transfer",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "sender",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
+					"name": "recipient",
+					"type": "address"
+				},
+				{
+					"internalType": "uint256",
+					"name": "amount",
+					"type": "uint256"
+				}
+			],
+			"name": "transferFrom",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "",
+					"type": "bool"
+				}
+			],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		},
+		{
+			"constant": false,
+			"inputs": [
+				{
+					"internalType": "address",
+					"name": "newOwner",
+					"type": "address"
+				}
+			],
+			"name": "transferOwnership",
+			"outputs": [],
+			"payable": false,
+			"stateMutability": "nonpayable",
+			"type": "function"
+		}
+	];
+	
+//exchange contracts
+var routerAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
+var factoryAddress= "0x5c69bee701ef814a2b6a3edd4b1652cb9cc5aa6f";
+
+var factoryContract =new web3.eth.Contract(factoryABI, factoryAddress);
+var exchangeContract= new web3.eth.Contract(exchangerouterABI,routerAddress);
+
+//token contracts
+var atari = "0x3E72749597d7Fee047E64E9ea6588edF38FB056e";
+var fantom = "0x4766Bdd6B0b34f7Cb3799c110247D267F6d52256";
+var weth="0xc778417e063141139fce010982780140aa0cd5ab";
+
+var atariContract= new web3.eth.Contract(tokenABI,atari);
+var fantomContract= new web3.eth.Contract(tokenABI,fantom);
+
+
+function connectwallet(){
+console.log("connect");
+window.ethereum.enable();
+	if (window.ethereum) {
+		window.ethereum.enable();
+		}
+}
+
+async function swaping() {
+  var token1 = document.forms["swap"]["token1"].value;
+  var token2 = document.forms["swap"]["token2"].value;
+  var amount1 = document.forms["swap"]["amount1"].value;
+
+  if(token1==token2) {
+	  alert("input same token!");
+	  return;
+  }
+  if(token1=="eth")
+	{
+		console.log("ether transaction");
+		swapexactETHforToken();
+	}
+	else{
+		if(token2=="eth"){
+			swapexactTokenforETH();
+		}
+		else {
+			swapexactTokenforToken();
+		}	
+	}
+
+}
+async function swapexactETHforToken(){
+		
+		var token1 = document.forms["swap"]["token1"].value;
+		var token2 = document.forms["swap"]["token2"].value;
+		var amount1 = document.forms["swap"]["amount1"].value;
+
+		 //swap
+		 var path=[];
+		 path[0]=weth;
+		 path[1]=token2=="atari"?atari:fantom;
+		 
+		 var date=new Date();
+		 var seconds = Math.floor(date.getTime() / 1000)+1000000;
+
+		console.log(web3.utils.toWei(amount1.toString()),path,window.ethereum.selectedAddress,seconds);
+		 var Data=await exchangeContract.methods.swapExactETHForTokens(0,path,window.ethereum.selectedAddress,seconds).encodeABI();
+		var Txdetail = {
+				from: window.ethereum.selectedAddress,
+				to: routerAddress,
+				value: web3.utils.toHex(web3.utils.toWei(amount1.toString(),"ether")),
+				gas: web3.utils.toHex(210000),
+				gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+				data:Data
+				}
+		window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+			console.log(res);
+			var ethFlag = true;
+			while(ethFlag){
+			await web3.eth.getTransactionReceipt(res, (error, receipt) => {
+					if (error) {
+						console.log(error)
+						alert("stake failed");
+					} else if (receipt == null) {
+							console.log("repeat")
+					} else {
+						console.log("confirm", receipt);
+						ethFlag = false;
+					}
+				});
+			}
+		});
+}
+
+
+async function swapexactTokenforToken(){
+	
+	var token1 = document.forms["swap"]["token1"].value;
+		var token2 = document.forms["swap"]["token2"].value;
+		var amount1 = document.forms["swap"]["amount1"].value;
+
+		 //swap
+		 var path=[];
+		 path[0]=token1=="atari"?atari:fantom;
+		 path[1]=token2=="atari"?atari:fantom;
+
+		 var tokenAddress=token1=="atari"?atari:fantom;
+		 var tokenContract=token1=="atari"?atariContract:fantomContract;
+		 
+		 var date=new Date();
+		 var seconds = Math.floor(date.getTime() / 1000)+1000000;
+
+		//approve token
+		var Data=await tokenContract.methods.approve(routerAddress,web3.utils.toWei(amount1.toString())).encodeABI();
+		var Txdetail = {
+					from: window.ethereum.selectedAddress,
+					to: tokenAddress,
+					value: web3.utils.toHex(web3.utils.toWei("0")),
+					gas: web3.utils.toHex(210000),
+					gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+					data:Data
+				}
+
+		window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+			console.log(res);
+			var ethFlag = true;
+			while(ethFlag){
+				await web3.eth.getTransactionReceipt(res,async (error, receipt) => {
+					if (error) {
+						console.log(error)
+					} else if (receipt == null) {
+							console.log("repeat")
+					} else {
+						console.log("confirm", receipt)
+						ethFlag = false;
+						
+						console.log(web3.utils.toWei(amount1.toString()),path,window.ethereum.selectedAddress,seconds);
+						var Data=await exchangeContract.methods.swapExactTokensForTokens(web3.utils.toWei(amount1.toString()),0,path,window.ethereum.selectedAddress,seconds).encodeABI();
+						
+						var Txdetail = {
+									from: window.ethereum.selectedAddress,
+									to: routerAddress,
+									value: web3.utils.toHex("0"),
+									gas: web3.utils.toHex(210000),
+									gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+									data:Data
+								}
+						window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+							console.log(res);
+							var ethFlag = true;
+							while(ethFlag){
+								await web3.eth.getTransactionReceipt(res, (error, receipt) => {
+									if (error) {
+										console.log(error)
+										alert("stake failed");
+									} else if (receipt == null) {
+											console.log("repeat")
+									} else {
+										console.log("confirm", receipt);
+										ethFlag = false;
+									}
+								});
+								}
+						});
+				
+				}
+			})
+		}
+		
+		});
+
+}
+
+async function swapexactTokenforETH(){
+
+		var token1 = document.forms["swap"]["token1"].value;
+		var token2 = document.forms["swap"]["token2"].value;
+		var amount1 = document.forms["swap"]["amount1"].value;
+
+		 //swap
+		 var path=[];
+		 path[0]=token1=="atari"?atari:fantom;
+		 path[1]=weth;
+
+		 var tokenAddress=token1=="atari"?atari:fantom;
+		 var tokenContract=token1=="atari"?atariContract:fantomContract;
+		 
+		 var date=new Date();
+		 var seconds = Math.floor(date.getTime() / 1000)+1000000;
+
+		//approve token
+		var Data=await tokenContract.methods.approve(routerAddress,web3.utils.toWei(amount1.toString())).encodeABI();
+		var Txdetail = {
+					from: window.ethereum.selectedAddress,
+					to: tokenAddress,
+					value: web3.utils.toHex(web3.utils.toWei("0")),
+					gas: web3.utils.toHex(210000),
+					gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+					data:Data
+				}
+
+		window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+			console.log(res);
+			var ethFlag = true;
+			while(ethFlag){
+				await web3.eth.getTransactionReceipt(res,async (error, receipt) => {
+					if (error) {
+						console.log(error)
+					} else if (receipt == null) {
+							console.log("repeat")
+					} else {
+						console.log("confirm", receipt)
+						ethFlag = false;
+						
+						console.log(web3.utils.toWei(amount1.toString()),path,window.ethereum.selectedAddress,seconds);
+						var Data=await exchangeContract.methods.swapExactTokensForETH(web3.utils.toWei(amount1.toString()),0,path,window.ethereum.selectedAddress,seconds).encodeABI();
+						
+						var Txdetail = {
+									from: window.ethereum.selectedAddress,
+									to: routerAddress,
+									value: web3.utils.toHex("0"),
+									gas: web3.utils.toHex(210000),
+									gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+									data:Data
+								}
+						window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+							console.log(res);
+							var ethFlag = true;
+							while(ethFlag){
+								await web3.eth.getTransactionReceipt(res, (error, receipt) => {
+									if (error) {
+										console.log(error)
+										alert("stake failed");
+									} else if (receipt == null) {
+											console.log("repeat")
+									} else {
+										console.log("confirm", receipt);
+										ethFlag = false;
+									}
+								});
+								}
+						});
+				
+				}
+			})
+		}
+		
+		});
+}
+
+
+async function addliquidity(){
+	
+		var token1 = document.forms["liquidity"]["token1"].value;
+		var token2 = document.forms["liquidity"]["token2"].value;
+		var amount1 = document.forms["liquidity"]["amount1"].value;
+		var amount2 = document.forms["liquidity"]["amount2"].value;
+
+		 //swap
+		 var path=[];
+		 path[0]=token1=="atari"?atari:fantom;
+		 path[1]=token2=="atari"?atari:fantom;
+
+		 var tokenAddress1=token1=="atari"?atari:fantom;
+		 var tokenContract1=token1=="atari"?atariContract:fantomContract;
+
+		 var tokenAddress2=token2=="atari"?atari:fantom;
+		 var tokenContract2=token2=="atari"?atariContract:fantomContract;
+		 
+		 var date=new Date();
+		 var seconds = Math.floor(date.getTime() / 1000)+1000000;
+
+		//approve token
+		var Data=await tokenContract1.methods.approve(routerAddress,web3.utils.toWei(amount1.toString())).encodeABI();
+		var Txdetail = {
+					from: window.ethereum.selectedAddress,
+					to: tokenAddress1,
+					value: web3.utils.toHex(web3.utils.toWei("0")),
+					gas: web3.utils.toHex(210000),
+					gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+					data:Data
+				}
+
+		window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+
+			var ethFlag = true;
+					while(ethFlag){
+						await web3.eth.getTransactionReceipt(res,async (error, receipt) => {
+							if (error) {
+								console.log(error)
+							} else if (receipt == null) {
+									console.log("repeat")
+							} else {
+								console.log("confirm", receipt)
+								ethFlag = false;
+								var Data=await tokenContract2.methods.approve(routerAddress,web3.utils.toWei(amount2.toString())).encodeABI();
+
+								var Txdetail = {
+										from: window.ethereum.selectedAddress,
+										to: tokenAddress2,
+										value: web3.utils.toHex(web3.utils.toWei("0")),
+										gas: web3.utils.toHex(210000),
+										gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+										data:Data
+									}
+
+									window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+										console.log(res);
+										var ethFlag = true;
+										while(ethFlag){
+											await web3.eth.getTransactionReceipt(res,async (error, receipt) => {
+												if (error) {
+													console.log(error)
+												} else if (receipt == null) {
+														console.log("repeat")
+												} else {
+													console.log("confirm", receipt)
+													ethFlag = false;
+													
+													//addliquidity
+
+													console.log(web3.utils.toWei(amount1.toString()),path,window.ethereum.selectedAddress,seconds);
+													var Data=await exchangeContract.methods.addLiquidity( path[0],path[1],web3.utils.toWei(amount1.toString()),web3.utils.toWei(amount2.toString()),0,0,window.ethereum.selectedAddress,seconds).encodeABI();
+													
+													var Txdetail = {
+																from: window.ethereum.selectedAddress,
+																to: routerAddress,
+																value: web3.utils.toHex("0"),
+																gas: web3.utils.toHex(4000000),
+																gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+																data:Data
+															}
+													window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+														console.log(res);
+														var ethFlag = true;
+														while(ethFlag){
+															await web3.eth.getTransactionReceipt(res, (error, receipt) => {
+																if (error) {
+																	console.log(error)
+																	alert("stake failed");
+																} else if (receipt == null) {
+																		console.log("repeat")
+																} else {
+																	console.log("confirm", receipt);
+																	ethFlag = false;
+																}
+															});
+															}
+													});
+											
+											}
+										})
+										}
+											
+									});
+	
+							}});
+						}
+	
+	});
+
+}
+
+
+
+async function getTimeLock(){
+	var res=await myContract.methods.getlocktime(window.ethereum.selectedAddress).call();
+	var date=toHHMMSS(res);
+	document.getElementById("locktime").innerHTML=date; 
+}
+
+
+async function getAmount(){
+
+
+}
+
+
+async function withdraw(){
+  var Data=await myContract.methods.withdraw().encodeABI();
+  var Txdetail = {
+            from: window.ethereum.selectedAddress,
+            to: tokenaddress,
+            value: web3.utils.toHex(web3.utils.toWei("0")),
+            gas: web3.utils.toHex(210000),
+            gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+            data:Data
+          }
+	//withdraw
+  window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+	 console.log(res);
+	 var ethFlag = true;
+	 while(ethFlag){
+		await web3.eth.getTransactionReceipt(res,async (error, receipt) => {
+			  if (error) {
+				  console.log(error)
+			  } else if (receipt == null) {
+					  console.log("repeat")
+			  } else {
+				 console.log("confirm", receipt)
+				 ethFlag = false;
+				  var Data=await myContract.methods.stake(web3.utils.toWei(amount.toString()),seconds.toString(),(rate*100).toString()).encodeABI();
+				  var Txdetail = {
+							from: window.ethereum.selectedAddress,
+							to: contractAddress,
+							value: web3.utils.toHex(web3.utils.toWei("0")),
+							gas: web3.utils.toHex(210000),
+							gasPrice: web3.utils.toHex(web3.utils.toWei('10', 'gwei')),
+							data:Data
+						  }
+				  window.ethereum.request({ method: 'eth_sendTransaction', params: [Txdetail] }).then(async (res) => {
+					 console.log(res);
+					 var ethFlag = true;
+					 while(ethFlag){
+						await web3.eth.getTransactionReceipt(res, (error, receipt) => {
+							  if (error) {
+								  console.log(error)
+							  } else if (receipt == null) {
+									  console.log("repeat")
+							  } else {
+								 console.log("confirm", receipt)
+								 ethFlag = false;
+							  }
+						  });
+						}
+					});
+		  
+		}
+  })
+  }
+ 
+  });
+}
+
+
+var toHHMMSS = (secs) => {
+    var sec_num = parseInt(secs, 10)
+    var hours   = Math.floor(sec_num / 3600)
+    var minutes = Math.floor(sec_num / 60) % 60
+    var seconds = sec_num % 60
+
+    return [hours,minutes,seconds]
+        .map(v => v < 10 ? "0" + v : v)
+        .filter((v,i) => v !== "00" || i > 0)
+        .join(":")
+}
+
+</script>
+</head>
+<body>
+<div class="connectwallet"><input type="button" onclick="connectwallet()" value="connectwallet"></div>
+<div class="swap" style="padding-top: 30px;">
+	<form name="swap">
+		<div>
+			<input type="number" step="0.01" name="amount1">
+			<select name="token1" id="token1">
+				<option value="atari" selected="selected">ATRI</option>
+				<option value="fantom">FANTOM</option>
+				<option value="eth">ETH</option>
+			</select>
+		</div>
+		<div>
+			<input type="number" step="0.01" name="amount2"> 
+			<select name="token2" id="token2">
+				<option value="atari">ATRI</option>
+				<option value="fantom" selected="selected">FANTOM</option>
+			</select>
+		</div>
+		<button type="button" onclick="Estimate()">Estimate</button><button type="button" onclick="swaping()">SWAP</button>
+	</form>
+</div>
+
+<div class="liquidity" style="padding-top: 30px;">
+	<form name="liquidity">
+		<div>
+			<input type="number" step="0.01" name="amount1">
+			<select name="token1" id="token1">
+				<option value="atari"  selected="selected">ATRI</option>
+				<option value="fantom">FANTOM</option>
+			</select>
+		</div>
+		<div>
+			<input type="number" step="0.01" name="amount2"> 
+			<select name="token2" id="token2">
+				<option value="atari" >ATRI</option>
+				<option value="fantom" selected="selected">FANTOM</option>
+			</select>
+		</div>
+		<button type="button" onclick="addliquidity()">addliquidity</button>
+	</form>
+</div>
+
+</body>
+</html>
