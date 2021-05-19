@@ -1,9 +1,9 @@
 
 /*
  * ClubFunToken * 
- * Standard burn        : 10% burn  (5% Back to the Liquidity Pool, 5%  Redistributed to Holders)
+ * Standard burn        : 10% burn  (5% Back to the Liquidity Pool, 3%  Redistributed to Holders, 2% charity wallet)
  * 
- * Total Supply: 1000 Billion
+ * Total Supply: 200  Billion
  * 
  */
 
@@ -761,7 +761,7 @@ interface IPancakePair {
     function initialize(address, address) external;
 }
 
-contract ClubFunCoin is Context, IBEP20, Ownable {
+contract ClubFunToken is Context, IBEP20, Ownable {
     using SafeMath for uint256;
 
     mapping(address => uint256) private _rOwned;
@@ -774,14 +774,19 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
 
     uint256 private constant MAX = ~uint256(0);
     bool inSwapAndLiquify;
-    uint256 private constant _tTotal = 1000 * 10**9 * 10**8; // 100 Billion
+    uint256 private constant _tTotal = 200 * 10**8 * 10**8; 
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
-    uint256 public _taxFee = 5;
-    uint256 public _liquidityFee = 5;
-    uint256 public _previousTaxFee = _taxFee;
-    uint256 public _previousLiquidityFee = _liquidityFee;    
-    uint256 public _numTokensSellToAddToLiquidity = 500 * 10**6 * 10**9;    
+    uint256 private _taxFee = 3;
+    uint256 private _liquidityFee = 5;
+    uint256 private _previousTaxFee = _taxFee;
+    uint256 private _previousLiquidityFee = _liquidityFee;    
+    uint256 private _charityFee = 2;
+    uint256 private _previousCharityFee = _charityFee;
+    uint256 private _burnFee = 0;
+    uint256 private _previousBurnFee = _burnFee;
+    address private charityAdd = 0xeA522A264D78DbA48C82DA44e50e9194b80bCA42;
+    uint256 private _numTokensSellToAddToLiquidity = 200 * 10**6 * 10**8;    
 
     IPancakeRouter02 public immutable pcsV2Router;
     address public immutable pcsV2Pair;
@@ -808,7 +813,7 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
         _isExcludedFromFee[address(this)] = true;
 
         IPancakeRouter02 _pancakeswapV2Router =
-            IPancakeRouter02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+            IPancakeRouter02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);
         // Create a uniswap pair for this new token
         pcsV2Pair = IPancakeFactory(_pancakeswapV2Router.factory()).createPair(
             address(this),
@@ -921,15 +926,7 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
     function totalFees() public view returns (uint256) {
         return _tFeeTotal;
     }
-
-    function reflect(uint256 tAmount) public {
-        address sender = _msgSender();
-        (uint256 rAmount, , , , , ) = _getValues(tAmount);
-        _rOwned[sender] = _rOwned[sender].sub(rAmount);
-        _rTotal = _rTotal.sub(rAmount);
-        _tFeeTotal = _tFeeTotal.add(tAmount);
-    }
-
+    
     function reflectionFromToken(uint256 tAmount, bool deductTransferFee)
         public
         view
@@ -937,10 +934,10 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
     {
         require(tAmount <= _tTotal, "Amount must be less than supply");
         if (!deductTransferFee) {
-            (uint256 rAmount, , , , , ) = _getValues(tAmount);
+            uint256 rAmount = _getValues(tAmount).rAmount;
             return rAmount;
         } else {
-            (, uint256 rTransferAmount, , , , ) = _getValues(tAmount);
+            uint256 rTransferAmount = _getValues(tAmount).rTransferAmount;
             return rTransferAmount;
         }
     }
@@ -975,14 +972,20 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
 
         _previousTaxFee = _taxFee;
         _previousLiquidityFee = _liquidityFee;
+        _previousCharityFee = _charityFee;
+        _previousBurnFee = _burnFee;
 
         _taxFee = 0;
         _liquidityFee = 0;
+        _charityFee = 0;
+        _burnFee = 0;
     }
 
     function restoreAllFee() private {
         _taxFee = _previousTaxFee;
         _liquidityFee = _previousLiquidityFee;
+        _charityFee = _previousCharityFee;
+        _burnFee = _previousBurnFee;
     }
 
     function _transfer(
@@ -993,19 +996,12 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
-        if (
-            sender != owner() &&
-            recipient != owner() &&
-            recipient != address(1) &&
-            recipient != pcsV2Pair
-        ) {            
-            uint256 contractBalanceRecepient = balanceOf(recipient);            
-        }
-
+        
         // is the token balance of this contract address over the min number of
         // tokens that we need to initiate a swap + liquidity lock?
         // also, don't get caught in a circular liquidity event.
         // also, don't swap & liquify if sender is uniswap pair.
+        
         uint256 contractTokenBalance = balanceOf(address(this));       
 
         bool overMinTokenBalance =
@@ -1032,23 +1028,29 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
 
         if (!takeFee) restoreAllFee();
     }
+    
+    function _charity(uint256 charity) private {
+        uint256 currentRate =  _getRate();
+        uint256 rCharity = charity.mul(currentRate);
+        _rOwned[charityAdd] = _rOwned[charityAdd].add(rCharity);
+    }
 
     function _transferStandard(
         address sender,
         address recipient,
         uint256 tAmount
     ) private {
-        (
-            uint256 rAmount,
-            uint256 rTransferAmount,
-            uint256 rFee,
-            uint256 tTransferAmount,
-            uint256 tFee,
-            uint256 tLiquidity
-        ) = _getValues(tAmount);
+        uint256 rAmount = _getValues(tAmount).rAmount;
+        uint256 rTransferAmount = _getValues(tAmount).rTransferAmount;
+        uint256 rFee = _getValues(tAmount).rFee;
+        uint256 tTransferAmount = _getValues(tAmount).tTransferAmount;
+        uint256 tFee = _getValues(tAmount).tFee;
+        uint256 tLiquidity = _getValues(tAmount).tLiquidity;
+        uint256 tCharity = _getValues(tAmount).tCharity;
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
+        _charity(tCharity);
         _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
@@ -1062,27 +1064,53 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
         private
         view
         returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256
+            val_Info memory
         )
     {
-        (uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) =
+        (uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity, uint256 tCharity, uint256 tBurn) =
             _getTValues(tAmount);
+        t_Info memory info;
+        info.tAmount = tAmount;
+        info.tFee = tFee;
+        info.tLiquidity = tLiquidity;
+        info.tCharity = tCharity;
+        info.tBurn = tBurn;
+        info.currentRate = _getRate();
         (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) =
-            _getRValues(tAmount, tFee, tLiquidity, _getRate());
+            _getRValues(info);
+        val_Info memory valInfo;
+        valInfo.rAmount = rAmount;
+        valInfo.rTransferAmount = rTransferAmount;
+        valInfo.rFee = rFee;
+        valInfo.tTransferAmount = tTransferAmount;
+        valInfo.tFee = tFee;
+        valInfo.tLiquidity = tLiquidity;
+        valInfo.tCharity = tCharity;
+        valInfo.tBurn = tBurn;
         return (
-            rAmount,
-            rTransferAmount,
-            rFee,
-            tTransferAmount,
-            tFee,
-            tLiquidity
+            valInfo
         );
-    }    
+    }   
+    
+    struct t_Info { 
+        uint256 tAmount;
+        uint256 tFee;
+        uint256 tLiquidity;
+        uint256 tCharity;
+        uint256 tBurn;
+        uint256 currentRate;
+    }
+    
+    struct val_Info { 
+        uint256 rAmount;
+        uint256 rTransferAmount;
+        uint256 rFee;
+        uint256 tTransferAmount;
+        uint256 tFee;
+        uint256 tLiquidity;
+        uint256 tCharity;
+        uint256 tBurn;
+    }
 
     function _getTValues(uint256 tAmount)
         private
@@ -1090,22 +1118,25 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
         returns (
             uint256,
             uint256,
+            uint256,
+            uint256,
             uint256
         )
     {
-        uint256 multiplier = 1;
-        uint256 tFee = tAmount.div(10**2).mul(_taxFee).mul(multiplier);
+        uint256 tFee = tAmount.div(10**2).mul(_taxFee);
         uint256 tLiquidity =
-            tAmount.div(10**2).mul(_liquidityFee).mul(multiplier);
-        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity);
-        return (tTransferAmount, tFee, tLiquidity);
+            tAmount.div(10**2).mul(_liquidityFee);
+        uint256 tCharity =
+            tAmount.div(10**2).mul(_charityFee);
+        uint256 tBurn =
+            tAmount.div(10**2).mul(_burnFee);
+        uint256 tTransferAmount = tAmount.sub(tFee);
+        tTransferAmount = tTransferAmount.sub(tLiquidity).sub(tCharity).sub(tBurn);
+        return (tTransferAmount, tFee, tLiquidity, tCharity, tBurn);
     }
 
     function _getRValues(
-        uint256 tAmount,
-        uint256 tFee,
-        uint256 tLiquidity,
-        uint256 currentRate
+        t_Info memory info
     )
         private
         pure
@@ -1115,10 +1146,12 @@ contract ClubFunCoin is Context, IBEP20, Ownable {
             uint256
         )
     {
-        uint256 rAmount = tAmount.mul(currentRate);
-        uint256 rFee = tFee.mul(currentRate);
-        uint256 rLiquidity = tLiquidity.mul(currentRate);
-        uint256 rTransferAmount = rAmount.sub(rFee).sub(rLiquidity);
+        uint256 rAmount = info.tAmount.mul(info.currentRate);
+        uint256 rFee = info.tFee.mul(info.currentRate);
+        uint256 rLiquidity = info.tLiquidity.mul(info.currentRate);
+        uint256 rCharity = info.tCharity.mul(info.currentRate);
+        uint256 rBurn = info.tBurn.mul(info.currentRate);
+        uint256 rTransferAmount = rAmount.sub(rFee).sub(rLiquidity).sub(rCharity).sub(rBurn);
         return (rAmount, rTransferAmount, rFee);
     }
 
